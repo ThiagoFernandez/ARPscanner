@@ -77,7 +77,7 @@ def validate_ipv4(ip):  # -1 si es invalido
 def validat_args():
     if len(sys.argv) != 2:
         print("Uso: python main.py <red base u host/mascara>")
-        return -1, -1
+        return -1
     usr_input = sys.argv[1]
     resultado = validate_ipv4(usr_input)
     if resultado == -1:

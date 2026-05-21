@@ -1,7 +1,11 @@
+import json
+import os
+import re
 import socket
 import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
+from itertools import zip_longest
 
 import colorama
 import requests
@@ -131,6 +135,8 @@ def ver_resultados(resultados, si, no):
 def start_scanner():
     start = datetime.now()
     paquete = get_paquete()
+    if paquete == -1:
+        return
     si_rta, no_rta = enviar_paquete(paquete)
     dispositivos = get_resultados(si_rta)
     ver_resultados(dispositivos, si_rta, no_rta)
@@ -139,3 +145,64 @@ def start_scanner():
     print(f"Tiempo: {elapsed:.2f} segundos")
     auxiliar.save_file(dispositivos)
     print("Resultados guardados")
+
+
+def get_json():
+    return [f for f in os.listdir() if f.endswith(".json")]
+
+
+def get_content(json1, json2):
+    with open(json1, "r", encoding="UTF-8") as f1:
+        data1 = json.load(f1)
+    with open(json2, "r", encoding="UTF-8") as f2:
+        data2 = json.load(f2)
+
+    return data1, data2
+
+
+def compare_json():
+    auxiliar.greeting_text("Welcome - U have to choose two json files")
+    options = get_json()
+    auxiliar.show_options(options)
+    resultado = auxiliar.validate_number(options)
+    if resultado == -1:
+        return
+
+    resultado2 = auxiliar.validate_number(options)
+    if resultado2 == -1:
+        return
+    elif resultado2 == resultado:
+        print("No se puede elegir el mismo")
+        return
+
+    if resultado > resultado2:
+        data1, data2 = get_content(options[resultado - 1], options[resultado2 - 1])
+    else:
+        data1, data2 = get_content(options[resultado2 - 1], options[resultado - 1])
+
+    # data1 es el reporte mas reciente
+    macs_nuevas = {d["mac"] for d in data1}
+    macs_viejas = {d["mac"] for d in data2}
+
+    # operaciones de conjuntos
+    nuevos = macs_nuevas - macs_viejas
+    desaparecidos = macs_viejas - macs_nuevas
+
+    por_mac_nuevo = {d["mac"]: d for d in data1}
+    por_mac_viejo = {d["mac"]: d for d in data2}
+
+    for mac in nuevos:
+        print(f"NUEVO: {por_mac_nuevo[mac]}")
+
+    for mac in desaparecidos:
+        print(f"DESAPARECIDO: {por_mac_viejo[mac]}")
+
+    for mac in macs_nuevas & macs_viejas:
+        if por_mac_nuevo[mac]["ip"] != por_mac_viejo[mac]["ip"]:
+            print(
+                f"IP cambiada: {mac} era {por_mac_viejo[mac]['ip']} --> ahora: {por_mac_nuevo[mac]['ip']}"
+            )
+
+    print(
+        f"-Diferencia total-\nCantidad de dispositivos en el registro mas reciente: {len(data1)}\nCantidad de dispositivos en el registro 'viejo': {len(data2)}"
+    )

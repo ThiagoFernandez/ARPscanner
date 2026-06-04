@@ -206,3 +206,15 @@ def compare_json():
     print(
         f"-Diferencia total-\nCantidad de dispositivos en el registro mas reciente: {len(data1)}\nCantidad de dispositivos en el registro 'viejo': {len(data2)}"
     )
+
+
+def watch():
+    cont = 1
+    try:
+        while True:
+            print(f"CONTROL+C TO STOP - CONTROL NUMBER {cont}")
+            start_scanner()
+            time.sleep(10)  # esto lo elije cada uno, pongo 10 nomas para testear esto
+            cont += 1
+    except KeyboardInterrupt:
+        return

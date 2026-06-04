@@ -15,7 +15,7 @@ def main():
         case 2:
             scanner.compare_json()
         case 3:
-            # scanner.watch()
+            scanner.watch()
             pass
 
 

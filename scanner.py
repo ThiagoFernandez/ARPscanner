@@ -94,6 +94,9 @@ def get_resultados(si_rta):
 
 
 def ver_resultados(resultados, si, no):
+    if not resultados:
+        print("No encontro nada")
+        return
     # ancho max x col
     anchos = {
         "ip": max(len(d["ip"]) for d in resultados),

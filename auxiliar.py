@@ -9,7 +9,6 @@ def save_file(dic):
     with open(f"arp_results_{now}.json", "w", encoding="UTF-8") as f:
         json.dump(dic, f, indent=4)
 
-
 def validate_ipv4(ip):  # -1 si es invalido
     # solo una barra
     if ip.count("/") != 1:
@@ -18,7 +17,7 @@ def validate_ipv4(ip):  # -1 si es invalido
     if ip.count(".") != 3:
         return -1
     # no puede haber letras
-    if re.search("[a-zA-z]", ip):
+    if re.search("[a-zA-Z]", ip):
         return -1
 
     mascara_idx = ip.index("/")  # busco donde comienza la barra
@@ -26,52 +25,56 @@ def validate_ipv4(ip):  # -1 si es invalido
         mascara = int(ip[mascara_idx + 1 :])  # solo el numero de la mascara
     except ValueError:
         return -1
+    
     ipv4 = ip[:mascara_idx]  # solo la parte de la ip
 
-    octetos = []  # lista de octetos
-    octeto = ""  # octeto vacio el cual voy sumando caracter x caracter
-    for i in range(len(ipv4)):
-        if ipv4[i] == ".":
-            if (
-                int(octeto) > 255 or int(octeto) < 0
-            ):  # el octeto no puede sr menor a 0 o mayor a 255
-                return -1
-            octetos.append(int(octeto))  # lo guardo
-            octeto = ""  # lo reinicio
-        else:
-            octeto += ipv4[i]
-    octetos.append(int(octeto))
+    # OPTIMIZACIÓN: Separamos los octetos directamente usando split
+    try:
+        octetos = [int(x) for x in ipv4.split(".")]
+    except ValueError:
+        # Por si hay puntos consecutivos o formatos extraños como '10..0.1'
+        return -1
 
-    if mascara > 32 or mascara < 0:  # la mascara no puedee ser menor q 0 ni mayor qq 32
+    # Validamos que los 4 octetos estén en el rango correcto (0-255)
+    for octeto in octetos:
+        if octeto < 0 or octeto > 255:
+            return -1
+
+    # la mascara no puede ser menor q 0 ni mayor qq 32
+    if mascara > 32 or mascara < 0:  
         return -1
 
     match octetos[0]:
         case 10:
-            pass  # este caso ya esta validado con lo anterior
+            if mascara < 8:  # CORRECCIÓN: La red de clase A privada (10.0.0.0) empieza en /8
+                return -1
         case 172:
-            if (
-                octetos[1] < 16 or octetos[1] > 31
-            ):  # segundo octeto tiene q ser ntre 16-31
+            if octetos[1] < 16 or octetos[1] > 31:  # segundo octeto entre 16-31
                 return -1
             if mascara < 12:  # la mascara no puede ser menor a 12
                 return -1
         case 192:
-            if (
-                octetos[1] != 168
-            ):  # si o si el 2do octeto es 168 --- una de las redes priv + comunes
+            if octetos[1] != 168:  # el 2do octeto debe ser 168
                 return -1
-            if (
-                mascara < 16
-            ):  # la mascara si o si 16, si se dan cuenta la mascara va creciendo de a 4 bits
+            if mascara < 16:  # la mascara no puede ser menor a 16
                 return -1
-        case _:  # cualquier otro caso es invalido porque no es privada o no cumple el formato ipv4
+        case _:  # cualquier otro caso es invalido porque no es privada
             return -1
 
-            #       8               16                  24              32
-
-    # donde hay 1 conserva el bit de la ip, si hay 0 pone 0 sin importar el bit de la ip
-
     return mascara, ipv4
+
+
+def validat_args():
+    if len(sys.argv) != 2:
+        print("Uso: python main.py <red base u host/mascara>")
+        return -1
+    usr_input = sys.argv[1]
+    resultado = validate_ipv4(usr_input)
+    if resultado == -1:
+        return -1
+    mask, ipv4 = resultado
+    print(f"ip: {ipv4} --- mascara: {mask}")
+    return usr_input
 
 
 def validat_args():
